@@ -87,6 +87,33 @@ class QuizApp {
                     choices: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"],
                     answer: "Carbon Dioxide"
                 }
+            ],
+            history: [
+                {
+                    question: "In which year did World War II end?",
+                    choices: ["1943", "1944", "1945", "1946"],
+                    answer: "1945"
+                },
+                {
+                    question: "Who was the first President of the United States?",
+                    choices: ["Thomas Jefferson", "John Adams", "George Washington", "Benjamin Franklin"],
+                    answer: "George Washington"
+                },
+                {
+                    question: "Which ancient wonder was located in Alexandria?",
+                    choices: ["Colossus of Rhodes", "Lighthouse of Alexandria", "Hanging Gardens", "Temple of Artemis"],
+                    answer: "Lighthouse of Alexandria"
+                },
+                {
+                    question: "In which year did Columbus discover America?",
+                    choices: ["1490", "1491", "1492", "1493"],
+                    answer: "1492"
+                },
+                {
+                    question: "Which empire was ruled by the Aztecs?",
+                    choices: ["Inca Empire", "Maya Empire", "Aztec Empire", "Olmec Empire"],
+                    answer: "Aztec Empire"
+                }
             ]
         };
 
@@ -97,6 +124,8 @@ class QuizApp {
         this.selectedAnswer = null;
         this.isAnswered = false;
         this.totalQuestions = 0;
+        this.startTime = null;
+        this.endTime = null;
 
         // DOM elements
         this.appContainer = document.getElementById('app');
@@ -109,41 +138,54 @@ class QuizApp {
      * Initialize the quiz application
      */
     init() {
-        this.showSubjectSelector();
+        this.showWelcomeScreen();
     }
 
     /**
-     * Display the subject selection screen
+     * Display the welcome screen
      */
-    showSubjectSelector() {
-        const subjectEmojis = {
-            english: '📘',
-            math: '🧮',
-            science: '🔬'
-        };
-
+    showWelcomeScreen() {
         this.appContainer.innerHTML = `
-            <div class="subject-selector">
-                ${Object.keys(this.questions).map(subject => `
-                    <button class="subject-btn ${subject}" data-subject="${subject}">
-                        ${subjectEmojis[subject]} ${this.capitalizeFirst(subject)}
-                    </button>
-                `).join('')}
+            <div class="welcome-screen">
+                <h1 class="welcome-title">🎓 Smart Quiz</h1>
+                <p class="welcome-subtitle">Test your knowledge and challenge your mind!</p>
+                <div class="subject-selector">
+                    <div class="subject-card english" data-subject="english">
+                        <i class="fas fa-book subject-icon"></i>
+                        <div class="subject-title">English</div>
+                        <div class="subject-description">Grammar, vocabulary & language skills</div>
+                    </div>
+                    <div class="subject-card math" data-subject="math">
+                        <i class="fas fa-calculator subject-icon"></i>
+                        <div class="subject-title">Mathematics</div>
+                        <div class="subject-description">Numbers, calculations & problem solving</div>
+                    </div>
+                    <div class="subject-card science" data-subject="science">
+                        <i class="fas fa-flask subject-icon"></i>
+                        <div class="subject-title">Science</div>
+                        <div class="subject-description">Nature, space & scientific facts</div>
+                    </div>
+                    <div class="subject-card history" data-subject="history">
+                        <i class="fas fa-landmark subject-icon"></i>
+                        <div class="subject-title">History</div>
+                        <div class="subject-description">Past events, civilizations & discoveries</div>
+                    </div>
+                </div>
             </div>
         `;
 
-        // Attach event listeners to subject buttons
+        // Attach event listeners to subject cards
         this.attachSubjectListeners();
     }
 
     /**
-     * Attach event listeners to subject selection buttons
+     * Attach event listeners to subject selection cards
      */
     attachSubjectListeners() {
-        const subjectButtons = this.appContainer.querySelectorAll('.subject-btn');
-        subjectButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const subject = e.target.dataset.subject;
+        const subjectCards = this.appContainer.querySelectorAll('.subject-card');
+        subjectCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                const subject = e.currentTarget.dataset.subject;
                 this.startQuiz(subject);
             });
         });
@@ -158,6 +200,7 @@ class QuizApp {
         this.currentQuestionIndex = 0;
         this.score = 0;
         this.totalQuestions = this.questions[subject].length;
+        this.startTime = Date.now();
         this.showQuestion();
     }
 
@@ -169,23 +212,48 @@ class QuizApp {
         this.isAnswered = false;
         this.selectedAnswer = null;
 
+        const progressPercentage = ((this.currentQuestionIndex + 1) / this.totalQuestions) * 100;
+
         this.appContainer.innerHTML = `
             <div class="quiz-container">
+                <div class="quiz-header">
+                    <div class="subject-info">
+                        <i class="fas fa-${this.getSubjectIcon(this.currentSubject)}"></i>
+                        <span>${this.capitalizeFirst(this.currentSubject)}</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                    </div>
+                    <div class="question-counter">
+                        ${this.currentQuestionIndex + 1} / ${this.totalQuestions}
+                    </div>
+                </div>
+                
                 <div class="question">${currentQuestion.question}</div>
+                
                 <div class="choices">
-                    ${currentQuestion.choices.map(choice => 
-                        `<button class="choice-btn" data-choice="${choice}">${choice}</button>`
+                    ${currentQuestion.choices.map((choice, index) => 
+                        `<button class="choice-btn" data-choice="${choice}" data-index="${index}">
+                            <span class="choice-letter">${String.fromCharCode(65 + index)}</span>
+                            <span class="choice-text">${choice}</span>
+                        </button>`
                     ).join('')}
                 </div>
+                
                 <div class="controls">
                     <div class="score-display">
-                        📊 Question ${this.currentQuestionIndex + 1} of ${this.totalQuestions} | 
+                        <i class="fas fa-trophy"></i>
                         Score: ${this.score}/${this.totalQuestions}
                     </div>
                     <div class="button-group">
-                        <button class="restart-btn" id="restartBtn">🏠 Home</button>
-                        <button class="next-btn" id="nextBtn" disabled>
-                            ${this.currentQuestionIndex === this.totalQuestions - 1 ? '📊 Finish' : '➡️ Next'}
+                        <button class="btn btn-secondary" id="restartBtn">
+                            <i class="fas fa-home"></i>
+                            Home
+                        </button>
+                        <button class="btn btn-primary" id="nextBtn" disabled>
+                            ${this.currentQuestionIndex === this.totalQuestions - 1 ? 
+                                '<i class="fas fa-flag-checkered"></i> Finish' : 
+                                '<i class="fas fa-arrow-right"></i> Next'}
                         </button>
                     </div>
                 </div>
@@ -193,6 +261,21 @@ class QuizApp {
         `;
 
         this.attachQuestionListeners();
+    }
+
+    /**
+     * Get subject icon for display
+     * @param {string} subject - The subject name
+     * @returns {string} Icon class name
+     */
+    getSubjectIcon(subject) {
+        const icons = {
+            english: 'book',
+            math: 'calculator',
+            science: 'flask',
+            history: 'landmark'
+        };
+        return icons[subject] || 'question';
     }
 
     /**
@@ -207,7 +290,7 @@ class QuizApp {
         choiceButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (!this.isAnswered) {
-                    this.handleAnswerSelection(e.target);
+                    this.handleAnswerSelection(e.currentTarget);
                 }
             });
         });
@@ -219,7 +302,7 @@ class QuizApp {
 
         // Restart button listener
         restartButton.addEventListener('click', () => {
-            this.showSubjectSelector();
+            this.showWelcomeScreen();
         });
     }
 
@@ -248,16 +331,46 @@ class QuizApp {
             
             if (choice === currentQuestion.answer) {
                 btn.classList.add('correct');
+                btn.innerHTML += '<i class="fas fa-check correct-icon"></i>';
             } else if (choice === selectedAnswer && !isCorrect) {
                 btn.classList.add('incorrect');
+                btn.innerHTML += '<i class="fas fa-times incorrect-icon"></i>';
             }
         });
 
         // Enable next button
         this.appContainer.querySelector('#nextBtn').disabled = false;
 
-        // Provide audio feedback (if supported)
+        // Provide audio feedback
         this.playFeedbackSound(isCorrect);
+
+        // Show feedback message
+        this.showFeedbackMessage(isCorrect, selectedAnswer, currentQuestion.answer);
+    }
+
+    /**
+     * Show feedback message for the answer
+     * @param {boolean} isCorrect - Whether the answer was correct
+     * @param {string} selectedAnswer - The selected answer
+     * @param {string} correctAnswer - The correct answer
+     */
+    showFeedbackMessage(isCorrect, selectedAnswer, correctAnswer) {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = `feedback-message ${isCorrect ? 'correct' : 'incorrect'}`;
+        feedbackDiv.innerHTML = `
+            <i class="fas fa-${isCorrect ? 'check-circle' : 'times-circle'}"></i>
+            <span>${isCorrect ? 'Correct!' : `Incorrect. The correct answer is: ${correctAnswer}`}</span>
+        `;
+
+        const questionElement = this.appContainer.querySelector('.question');
+        questionElement.appendChild(feedbackDiv);
+
+        // Remove feedback after 3 seconds
+        setTimeout(() => {
+            if (feedbackDiv.parentNode) {
+                feedbackDiv.remove();
+            }
+        }, 3000);
     }
 
     /**
@@ -265,7 +378,6 @@ class QuizApp {
      * @param {boolean} isCorrect - Whether the answer was correct
      */
     playFeedbackSound(isCorrect) {
-        // Simple audio feedback using Web Audio API
         try {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
@@ -278,9 +390,11 @@ class QuizApp {
                 // Higher pitch for correct answers
                 oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
                 oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2);
             } else {
                 // Lower pitch for incorrect answers
                 oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(300, audioContext.currentTime + 0.1);
                 oscillator.frequency.setValueAtTime(200, audioContext.currentTime + 0.2);
             }
             
@@ -290,7 +404,6 @@ class QuizApp {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (error) {
-            // Audio feedback not supported, fail silently
             console.log('Audio feedback not supported');
         }
     }
@@ -304,6 +417,7 @@ class QuizApp {
         if (this.currentQuestionIndex < this.totalQuestions) {
             this.showQuestion();
         } else {
+            this.endTime = Date.now();
             this.showFinalScore();
         }
     }
@@ -314,6 +428,7 @@ class QuizApp {
     showFinalScore() {
         const percentage = Math.round((this.score / this.totalQuestions) * 100);
         const performanceData = this.getPerformanceData(percentage);
+        const timeTaken = this.formatTime(Math.floor((this.endTime - this.startTime) / 1000));
 
         this.appContainer.innerHTML = `
             <div class="final-score">
@@ -321,17 +436,52 @@ class QuizApp {
                 <div class="score">${this.score} out of ${this.totalQuestions}</div>
                 <div class="percentage">${percentage}%</div>
                 <div class="performance-message">${performanceData.message}</div>
-                <div style="margin: 25px 0;">
-                    ${this.generateScoreBreakdown()}
+                
+                <div class="score-breakdown">
+                    <div class="correct">
+                        <i class="fas fa-check-circle"></i>
+                        Correct: ${this.score}
+                    </div>
+                    <div class="incorrect">
+                        <i class="fas fa-times-circle"></i>
+                        Incorrect: ${this.totalQuestions - this.score}
+                    </div>
                 </div>
+                
+                <div class="quiz-stats">
+                    <div class="stat">
+                        <i class="fas fa-clock"></i>
+                        Time: ${timeTaken}
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Speed: ${this.calculateSpeed()} questions/min
+                    </div>
+                </div>
+                
                 <div class="button-group">
-                    <button class="restart-btn" id="restartBtn">🏠 Home</button>
-                    <button class="next-btn" id="retakeBtn">🔄 Retake Quiz</button>
+                    <button class="btn btn-secondary" id="restartBtn">
+                        <i class="fas fa-home"></i>
+                        Home
+                    </button>
+                    <button class="btn btn-primary" id="retakeBtn">
+                        <i class="fas fa-redo"></i>
+                        Retake Quiz
+                    </button>
                 </div>
             </div>
         `;
 
         this.attachFinalScoreListeners();
+    }
+
+    /**
+     * Calculate questions per minute
+     * @returns {string} Speed in questions per minute
+     */
+    calculateSpeed() {
+        const timeInMinutes = (this.endTime - this.startTime) / 1000 / 60;
+        return Math.round(this.totalQuestions / timeInMinutes);
     }
 
     /**
@@ -374,22 +524,6 @@ class QuizApp {
     }
 
     /**
-     * Generate a visual breakdown of the score
-     * @returns {string} HTML string for score breakdown
-     */
-    generateScoreBreakdown() {
-        const correctCount = this.score;
-        const incorrectCount = this.totalQuestions - this.score;
-        
-        return `
-            <div style="display: flex; justify-content: center; gap: 20px; font-size: 14px;">
-                <div style="color: #28a745;">✅ Correct: ${correctCount}</div>
-                <div style="color: #dc3545;">❌ Incorrect: ${incorrectCount}</div>
-            </div>
-        `;
-    }
-
-    /**
      * Attach event listeners for the final score screen
      */
     attachFinalScoreListeners() {
@@ -397,7 +531,7 @@ class QuizApp {
         const retakeButton = this.appContainer.querySelector('#retakeBtn');
 
         restartButton.addEventListener('click', () => {
-            this.showSubjectSelector();
+            this.showWelcomeScreen();
         });
 
         retakeButton.addEventListener('click', () => {
@@ -412,6 +546,17 @@ class QuizApp {
      */
     capitalizeFirst(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    /**
+     * Format time duration
+     * @param {number} seconds - Duration in seconds
+     * @returns {string} Formatted time string
+     */
+    formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
     /**
@@ -437,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add some utility functions for potential future features
 const QuizUtils = {
     /**
-     * Save quiz results to local storage (if needed in the future)
+     * Save quiz results to local storage
      * @param {Object} results - Quiz results to save
      */
     saveResults(results) {
@@ -467,13 +612,13 @@ const QuizUtils = {
     },
 
     /**
-     * Format time duration
-     * @param {number} seconds - Duration in seconds
-     * @returns {string} Formatted time string
+     * Clear saved results
      */
-    formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    clearResults() {
+        try {
+            localStorage.removeItem('quizResults');
+        } catch (error) {
+            console.log('Could not clear results:', error);
+        }
     }
 };
